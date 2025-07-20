@@ -29,9 +29,9 @@ def load_map(filename, map_struct):
     
     map_struct.clear()
     
-    # TODO: Add your map loading code here
+    # TODO: Add your map loading code here (done)
     map_file = map_file.read()
-
+    map_struct = map_file.split("\n")
 
     MAP_WIDTH = len(map_struct[0])
     MAP_HEIGHT = len(map_struct)
@@ -59,6 +59,8 @@ def initialize_game(game_map, fog, player):
     player['day'] = 0
     player['steps'] = 0
     player['turns'] = TURNS_PER_DAY
+
+    player['backpackslots'] = 10
 
     clear_fog(fog, player)
     
@@ -145,10 +147,10 @@ while True:
         elif townchoice.lower() == "e":
 
         elif townchoice.lower() == "v":
-    
+            
         elif townchoice.lower() == "q":
             continue
     elif menuchoice.lower() == "l":
-
+        
     elif menuchoice.lower() == "q":
         break
