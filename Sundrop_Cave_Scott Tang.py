@@ -167,11 +167,11 @@ def buy_stuff(player:dict):
 def show_information(player):
     print("----- Player Information -----")
     print("Name: {}".format(player["name"]))
-    print("Portal position: {}".format(player["x"]))
-    print("Pickaxe level: {} {}")
+    print("Portal position: ({},{})".format(player["x"],player["y"]))
+    #print("Pickaxe level: {} {}")
     print("------------------------------")
-    print("GP: {}")
-    print("Steps taken: {}")
+    print("GP: {}".format(player['GP']))
+    print("Steps taken: {}".format(player['steps']))
     print("------------------------------")
 
 
@@ -338,7 +338,7 @@ def town_menu_actions(game_map,fog,player:dict):
             return "Enter"
         elif townchoice.lower() == "v": #TODO: save game
             print('saving tha game')
-            print(fog)
+            
             save_game(game_map,fog,player)
         elif townchoice.lower() == "q":
             return "Exit"
