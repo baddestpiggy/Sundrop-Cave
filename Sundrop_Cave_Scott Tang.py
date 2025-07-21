@@ -55,7 +55,7 @@ def clear_fog(fog:list, player: dict):
     for x in range(-1,2,1):
         for y in range(-1,2,1):
             
-            if (plr_y + y < 0 or plr_x + x < 0) or (plr_y + y > len(fog) or plr_x+x > len(fog[0])): #checks if player is on the top or leftmost border or rightmost or bottommost border
+            if (plr_y + y < 0 or plr_x + x < 0) or (plr_y + y >= len(fog) or plr_x+x >= len(fog[0])): #checks if player is on the top or leftmost border or rightmost or bottommost border
                 continue
         
             
@@ -90,13 +90,18 @@ def initialize_game(game_map:list, fog: list, player:dict):
     player['backpackslots'] = 10
     player['pickaxelevel'] = 1
     player['ores'] = []
-
+    player['minerals'] = {"C" : 0, "S" : 0, "G" : 0}
 
     clear_fog(fog, player)
     return game_map
-    
+
+def getnumberofminerals(player):
+    total = 0
+    for _,i in player['minerals'].items():
+        total += i
+    return total
 # This function draws the entire map, covered by the fof
-def draw_map(game_map:list, fog:list, player:dict):
+def draw_map(game_map:list, fog:list, player:dict,InTown: bool):
     plr_x = player.get("x")
     plr_y = player.get("y")
     if plr_x == None or plr_y == None:
@@ -110,8 +115,14 @@ def draw_map(game_map:list, fog:list, player:dict):
             element = row[elementindex]
             if fog[rowindex][elementindex] == "?":
                 element = "?"
-            elif rowindex == plr_y and elementindex == plr_x:
+            elif (rowindex == plr_y and elementindex == plr_x) and rowindex != 0 and elementindex != 0:
+                element = "P"
+                if not InTown:
+                    element = "M"
+            elif InTown and rowindex == 0 and elementindex == 0:
                 element = "M"
+                
+            
             print(element,end = '')
         print("|")
     print(horizontalborder)
@@ -131,7 +142,7 @@ def draw_view(game_map:list, fog:list, player:dict):
         print("|",end = '')
         for x in range(-1,2,1):
             
-            if (plr_y + y < 0 or plr_x + x < 0) or (plr_y + y > len(game_map) or plr_x + x > len(game_map)): #checks if player is on borders
+            if (plr_y + y < 0 or plr_x + x < 0) or (plr_y + y >= len(game_map) or plr_x + x >= len(game_map)): #checks if player is on borders
                 print("#",end = '')
             else:
                 if y == 0 and x == 0:
@@ -148,7 +159,7 @@ def buy_stuff(player:dict):
     print("(B)ackpack upgrade to carry {} items for {} GP".format(backpackslots+2,backpackslots*2))
     print("(L)eave shop")
     print("-----------------------------------------------------------")
-    print("GP: {}")
+    print("GP: {}".format(player["GP"]))
     print("-----------------------------------------------------------")
     return
 # This function shows the information for the player
@@ -222,26 +233,28 @@ def main_menu(game_map,fog,player):
 def town_menu_actions(game_map,fog,player:dict):
     
     while True:
-
+        sell_ores(player)
         show_town_menu(player["day"])
         townchoice = input("Your choice? ")
-        print("\n")
+        print("")
         if townchoice.lower() == "b": #TODO: next time make option to upgrade pickaxe
             while True:
                 buy_stuff(player)
                 buy_choice = input("Your choice? ")
                 if buy_choice.lower() == "b":
-                    if player["GP"] >= player["backpackslots"]:
+                    if player["GP"] >= player["backpackslots"] *2:
+                        
+                        print("Congratulations! You can now carry {} items!".format(player["backpackslots"]+2))
+                        player["GP"] -= player["backpackslots"] *2
                         player["backpackslots"] += 2
-                        print("Congratulations! You can now carry {} items!".format(player["backpackslots"]))
                         continue
-                elif buy_choice.lower() == 'q':
+                elif buy_choice.lower() == 'l':
                     break
             
         elif townchoice.lower() == "i":
             show_information(player)
         elif townchoice.lower() == "m":
-            draw_map(game_map,fog,player)
+            draw_map(game_map,fog,player,True)
 
         elif townchoice.lower() == "e":
             return "Enter"
@@ -253,67 +266,96 @@ def town_menu_actions(game_map,fog,player:dict):
 def show_mining_menu(game_map,fog,player):
     turns = player['turns']
     backpackslots = player['backpackslots']
-    numofores = len(player['ores'])
+    numofminerals = getnumberofminerals(player)
     steps = player['steps']
     print("DAY {}".format(str(player['day'])))
     draw_view(game_map,fog,player)
-    print("Turns left: {}   Load: {}/{}   Steps: {}".format(turns,numofores,backpackslots,steps))
+    print("Turns left: {}   Load: {}/{}   Steps: {}".format(turns,numofminerals,backpackslots,steps))
     print("(WASD) to move\n(M)ap, (I)nformation, (P)ortal, (Q)uit to main menu")
 
 def action_mining_menu(game_map,fog,player):
     while True:
         show_mining_menu(game_map,fog,player)
         mineaction = input("Action? ")
-        print("\n")
+        print("")
         if movement.get(mineaction.lower()): #movement
+            if player['turns'] == 0:
+                print("You're exhausted.")
+                print("You place your portal stone here and zap back to town.")
+                return "Town"
+            
             movementdirection = movement.get(mineaction.lower())
             dir_y = movementdirection[0]
             dir_x = movementdirection[1]
             plr_y = player['y']
             plr_x = player['x']
             player['turns'] -= 1
-            if (plr_y + dir_y < 0 or plr_x + dir_x < 0) or (plr_y + dir_y > len(game_map) or plr_x + dir_x > len(game_map)): #checks if player is gna move onto a border    
+            if (plr_y + dir_y < 0 or plr_x + dir_x < 0) or (plr_y + dir_y >= len(game_map) or plr_x + dir_x >= len(game_map)): #checks if player is gna move onto a border    
                 print("You cant move there brochacho")
             else: #valid movement
                 
                 futureposition = game_map[plr_y+dir_y][plr_x+dir_x]    
                 if futureposition == "T":        
+                    player['x'] = plr_x+dir_x
+                    player['y'] = plr_y+dir_y
+                    
                     return "Town"
                 
                 elif mineral_dropcount.get(futureposition):        
                     oresdropped = randint(mineral_dropcount.get(futureposition)[0],mineral_dropcount.get(futureposition)[1])        
-                    if len(player['ores']) + oresdropped > player['backpackslots']:                
-                        oresdropped = player['backpackslots'] - len(player['ores'])
+                    numofminerals = getnumberofminerals(player)
+                    if numofminerals == player['backpackslots']:
+                        print("Your backpack is full. You can't mine that.")
+                        continue
+                    if numofminerals + oresdropped > player['backpackslots']:                
+                        oresdropped = player['backpackslots'] - numofminerals
                                 
-                    for i in range(oresdropped):                    
-                        player['ores'].append(oresdropped)
+                    player['minerals'][futureposition] += oresdropped
                 
                     game_map[plr_y+dir_y][plr_x+dir_x] = " "
                 
                     print("You mined {} pieces of {}.".format(str(oresdropped),mineral_names[futureposition]))                
-                    if len(player['ores']) < player['backpackslots']:                    
-                        print("You can carry {} more piece(s).".format(player['backpackslots'] - len(player['ores'])))                
+                    
+                    if numofminerals + oresdropped < player['backpackslots']:                    
+                        print("You can carry {} more piece(s).".format(player['backpackslots'] - (numofminerals + oresdropped)))               
                     else:                    
                         print("Your backpack is full.")
                 player['x'] = plr_x+dir_x
                 player['y'] = plr_y+dir_y
 
                 clear_fog(fog,player)
-            if player['turns'] == 0:
-                print("You're exhausted.")
-                print("You place your portal stone here and zap back to town.")
-                return "Town"
+            
         else: #others
             if mineaction.lower() == "m":
-                draw_map(game_map,fog,player)
+                draw_map(game_map,fog,player,False)
             elif mineaction.lower() == "i":
                 show_information(player)
             elif mineaction.lower() == "p":
                 print("-----------------------------------------------------")
                 print("You place your portal stone here and zap back to town.")
+                return "Town"
     
-
-
+def sell_ores(player):
+    totalmineralssold = 0
+    for mineral,numofminerals in player['minerals'].items():
+        totalmineralssold += numofminerals
+        if numofminerals == 0:
+            continue
+        mineral_name = mineral_names[mineral]
+        mineral_price = prices[mineral_name]
+        minprice = mineral_price[0]
+        maxprice = mineral_price[1]
+        mineral_cost = 0
+        for i in range(numofminerals):
+            mineral_cost += randint(minprice,maxprice)
+        
+        print("You sell {} {} ore for {} GP.".format(str(numofminerals),mineral_name,str(mineral_cost)))    
+        player["GP"] += mineral_cost
+    if totalmineralssold != 0:
+        player['minerals'] = {"C" : 0, "S" : 0, "G" : 0}
+        print("You now have {} GP!".format(str(player["GP"])))
+    
+    return
 #--------------------------- MAIN GAME ---------------------------
 game_state = 'main'
 print("---------------- Welcome to Sundrop Caves! ----------------")
@@ -347,6 +389,7 @@ while True:
                 print("---------------------------------------------------")
                 mining_action = action_mining_menu(game_map,fog,player)
                 if mining_action == "Town":
+                    player['turns'] = TURNS_PER_DAY
                     continue
         
 
