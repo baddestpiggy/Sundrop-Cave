@@ -2,7 +2,7 @@ from random import randint
 
 player = {}
 game_map = []
-fog = []
+fog = [] #copying the game map ig but instead using '?' for fog and ' ' for cleared fog
 
 MAP_WIDTH = 0
 MAP_HEIGHT = 0
@@ -22,6 +22,7 @@ prices['gold'] = (10, 18)
 # This function loads a map structure (a nested list) from a file
 # It also updates MAP_WIDTH and MAP_HEIGHT
 def load_map(filename, map_struct):
+    
     map_file = open(filename, 'r')
     
     global MAP_WIDTH
@@ -39,7 +40,21 @@ def load_map(filename, map_struct):
     map_file.close()
 
 # This function clears the fog of war at the 3x3 square around the player
-def clear_fog(fog, player):
+def clear_fog(fog:list, player: dict):
+    plr_x = player.get("x")
+    plr_y = player.get("y")
+    #3x3 square around player coordinates is -1,-1
+    #need check if clearing fog is outside of map range also
+    for x in range(-1,1,1):
+        for y in range(-1,1,1):
+            if plr_y + y < 0 or plr_x + x < 0: #checks if player is on the top or leftmost border
+                continue
+            if plr_y + y > len(fog) or plr_x+x > len(fog[0]): #checks if player is on rightmost or bottommost border
+                continue
+            
+            if fog[plr_y + y][plr_x + x] == '?':
+                fog[plr_y + y][plr_x + x] = ' ' #clears the jawn
+
     return
 
 def initialize_game(game_map, fog, player):
