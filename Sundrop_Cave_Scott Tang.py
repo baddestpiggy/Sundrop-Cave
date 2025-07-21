@@ -74,7 +74,7 @@ def initialize_game(game_map:list, fog: list, player:dict):
         fog.append([])
         for y in range(MAP_WIDTH):
             fog[x].append("?")
-
+    
     # TODO: initialize player
     #   You will probably add other entries into the player dictionary
     player['x'] = 0
@@ -115,11 +115,12 @@ def draw_map(game_map:list, fog:list, player:dict,InTown: bool):
             element = row[elementindex]
             if fog[rowindex][elementindex] == "?":
                 element = "?"
-            elif (rowindex == plr_y and elementindex == plr_x) and rowindex != 0 and elementindex != 0:
+            elif (rowindex == plr_y and elementindex == plr_x):
                 element = "P"
                 if not InTown:
+                    
                     element = "M"
-            elif InTown and rowindex == 0 and elementindex == 0:
+            if InTown and rowindex == 0 and elementindex == 0:
                 element = "M"
                 
             
@@ -142,7 +143,7 @@ def draw_view(game_map:list, fog:list, player:dict):
         print("|",end = '')
         for x in range(-1,2,1):
             
-            if (plr_y + y < 0 or plr_x + x < 0) or (plr_y + y >= len(game_map) or plr_x + x >= len(game_map)): #checks if player is on borders
+            if (plr_y + y < 0 or plr_x + x < 0) or (plr_y + y >= len(game_map) or plr_x + x >= len(game_map[0])): #checks if player is on borders
                 print("#",end = '')
             else:
                 if y == 0 and x == 0:
@@ -165,8 +166,8 @@ def buy_stuff(player:dict):
 # This function shows the information for the player
 def show_information(player):
     print("----- Player Information -----")
-    print("Name: {}")
-    print("Portal position: {}")
+    print("Name: {}".format(player["name"]))
+    print("Portal position: {}".format(player["x"]))
     print("Pickaxe level: {} {}")
     print("------------------------------")
     print("GP: {}")
@@ -178,17 +179,94 @@ def show_information(player):
 
 # This function saves the game
 def save_game(game_map, fog, player):
-    # save map
-    # save fog
-    # save player
+    # save map as game_map.txt
+    with open("game_map.txt","w") as mapsavefile:
+        writtenstring = ''   
+        for rowindex in range(len(game_map)):
+            row = game_map[rowindex]
+                     
+            for elementindex in range(len(row)):
+                element = row[elementindex]
+                writtenstring += element
+            if rowindex != len(game_map)-1:
+
+                writtenstring += '\n'
+        mapsavefile.write(writtenstring)
+
+    
+                           
+            
+    # save fog as fog.txt
+    with open("fog.txt","w") as fogsavefile:
+        
+        writtenstring = ''
+        for rowindex in range(len(fog)):
+            row = fog[rowindex]
+                        
+            for elementindex in range(len(row)):
+                element = row[elementindex]
+                writtenstring += element
+            if rowindex != len(fog)-1:
+
+                writtenstring += '\n'
+            
+        fogsavefile.write(writtenstring)
+    # save player as player.txt
+    with open("player.txt","w") as playersavefile:
+        writtenstring = ''
+        for stat,value in player.items():
+            writtenstring += '{} - {}\n'.format(stat, value)
+        playersavefile.write(writtenstring)
     return
         
+def typeconverter(value:str):
+    if value.isdigit(): #integer
+        return int(value)
+    elif value[0] == '[' and value[-1] == "]": #list
+        value = value.replace("[","")
+        value = value.replace("]","")
+        outputlist = value.split(', ')
+        if len(outputlist) == 1 and outputlist[0] == '':
+            return []
+
+
+        return outputlist
+    elif value[0] == '{' and value[-1] == '}': #dict
+        
+        outputdict = {}
+        value = value.replace("{","")
+        value = value.replace("}","")
+        value = value.replace("'","")
+        value = value.split(', ')
+        
+        for keyvaluepair in value:
+            keyvaluepair = keyvaluepair.split(": ")
+            outputdict[keyvaluepair[0]] = int(keyvaluepair[1])
+
+        return outputdict
 # This function loads the game
 def load_game(game_map, fog, player):
     # load map
+    game_map = load_map('game_map.txt',game_map)
+    
     # load fog
+    with open('fog.txt','r') as fogsave:
+        fog = fogsave.read().split('\n')
+        for i in range(len(fog)):
+            fog[i] = list(fog[i])
+        
     # load player
-    return
+    with open('player.txt','r') as playersave:
+        playersave = playersave.read().split('\n')
+        for row in playersave:
+            row = row.split(' - ')
+            if len(row) != 2:
+                
+                continue
+            else:
+                row[1] = typeconverter(row[1])
+                player[str(row[0])] = row[1]
+    return game_map, fog
 
 def show_main_menu():
     print()
@@ -222,13 +300,13 @@ def main_menu(game_map,fog,player):
 
         player['name'] = name
 
-        return "",game_map
+        return "",game_map,fog
     elif menuchoice.lower() == "l":
-        
-        return
+        game_map,fog = load_game(game_map,fog,player)
+        return "", game_map,fog
     elif menuchoice.lower() == "q":
         
-        return 'Exit',[]
+        return 'Exit','',''
 
 def town_menu_actions(game_map,fog,player:dict):
     
@@ -260,6 +338,8 @@ def town_menu_actions(game_map,fog,player:dict):
             return "Enter"
         elif townchoice.lower() == "v": #TODO: save game
             print('saving tha game')
+            print(fog)
+            save_game(game_map,fog,player)
         elif townchoice.lower() == "q":
             return "Exit"
     
@@ -290,7 +370,8 @@ def action_mining_menu(game_map,fog,player):
             plr_y = player['y']
             plr_x = player['x']
             player['turns'] -= 1
-            if (plr_y + dir_y < 0 or plr_x + dir_x < 0) or (plr_y + dir_y >= len(game_map) or plr_x + dir_x >= len(game_map)): #checks if player is gna move onto a border    
+            player['steps'] += 1
+            if (plr_y + dir_y < 0 or plr_x + dir_x < 0) or (plr_y + dir_y >= len(game_map) or plr_x + dir_x >= len(game_map[0])): #checks if player is gna move onto a border    
                 print("You cant move there brochacho")
             else: #valid movement
                 
@@ -373,7 +454,7 @@ print("-----------------------------------------------------------")
 
 
 while True:
-    main_choice,game_map = main_menu(game_map,fog,player)
+    main_choice,game_map,fog = main_menu(game_map,fog,player)
     
     if main_choice == "Exit":
         break
