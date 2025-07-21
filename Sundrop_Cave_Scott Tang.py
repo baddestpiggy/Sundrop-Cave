@@ -22,31 +22,33 @@ prices['gold'] = (10, 18)
 # This function loads a map structure (a nested list) from a file
 # It also updates MAP_WIDTH and MAP_HEIGHT
 def load_map(filename, map_struct):
+    with open(filename, 'r') as map_file:
+        global MAP_WIDTH
+        global MAP_HEIGHT
     
-    map_file = open(filename, 'r')
+        map_struct.clear()
     
-    global MAP_WIDTH
-    global MAP_HEIGHT
-    
-    map_struct.clear()
-    
-    # TODO: Add your map loading code here (done)
-    map_file = map_file.read()
-    map_struct = map_file.split("\n")
+        # TODO: Add your map loading code here (done)
+        map_file = map_file.read()
+        map_struct = map_file.split("\n")
+        for i in range(len(map_struct)):
+            map_struct[i] = list(map_struct[i])
+        MAP_WIDTH = len(map_struct[0])
+        MAP_HEIGHT = len(map_struct)
 
-    MAP_WIDTH = len(map_struct[0])
-    MAP_HEIGHT = len(map_struct)
-
-    map_file.close()
+        return map_struct
+    
 
 # This function clears the fog of war at the 3x3 square around the player
 def clear_fog(fog:list, player: dict):
     plr_x = player.get("x")
     plr_y = player.get("y")
+    
     #3x3 square around player coordinates is -1,-1
     #need check if clearing fog is outside of map range also
-    for x in range(-1,1,1):
-        for y in range(-1,1,1):
+    for x in range(-1,2,1):
+        for y in range(-1,2,1):
+            
             if plr_y + y < 0 or plr_x + x < 0: #checks if player is on the top or leftmost border
                 continue
             if plr_y + y > len(fog) or plr_x+x > len(fog[0]): #checks if player is on rightmost or bottommost border
@@ -57,12 +59,17 @@ def clear_fog(fog:list, player: dict):
 
     return
 
-def initialize_game(game_map, fog, player):
+def initialize_game(game_map:list, fog: list, player:dict):
     # initialize map
-    load_map("level1.txt", game_map)
+    game_map = load_map("level1.txt", game_map)
 
-    # TODO: initialize fog
+    # TODO: initialize fog (done)
     
+    for x in range(MAP_HEIGHT):
+        fog.append([])
+        for y in range(MAP_WIDTH):
+            fog[x].append("?")
+
     # TODO: initialize player
     #   You will probably add other entries into the player dictionary
     player['x'] = 0
@@ -78,9 +85,26 @@ def initialize_game(game_map, fog, player):
     player['backpackslots'] = 10
 
     clear_fog(fog, player)
+    return game_map
     
 # This function draws the entire map, covered by the fof
-def draw_map(game_map, fog, player):
+def draw_map(game_map:list, fog:list, player:dict):
+    plr_x = player.get("x")
+    plr_y = player.get("y")
+    if plr_x == None or plr_y == None:
+        return
+    horizontalborder = "+"+"-"*len(game_map[0])+"+"
+    print(horizontalborder)
+    for rowindex in range(len(game_map)):
+        row = game_map[rowindex]
+        print("|",end = '')
+        for elementindex in range(len(row)):
+            element = row[elementindex]
+            if fog[rowindex][elementindex] == "?":
+                element = "?"
+            print(element,end = '')
+        print("|")
+    print(horizontalborder)
     return
 
 # This function draws the 3x3 viewport
@@ -138,7 +162,11 @@ print("  and live happily ever after?")
 print("-----------------------------------------------------------")
 
 # TODO: The game!
-while True:
+
+game_map = initialize_game(game_map,fog,player)
+print(player)
+
+'''while True:
 
     show_main_menu()
     menuchoice = input("Your choice? ")
@@ -168,4 +196,4 @@ while True:
     elif menuchoice.lower() == "l":
         
     elif menuchoice.lower() == "q":
-        break
+        break'''
