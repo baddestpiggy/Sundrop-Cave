@@ -79,9 +79,6 @@ def initialize_game(game_map:list, fog: list, player:dict):
     #   You will probably add other entries into the player dictionary
     player['x'] = 0
     player['y'] = 0
-    player['copper'] = 0
-    player['silver'] = 0
-    player['gold'] = 0
     player['GP'] = 0
     player['day'] = 0
     player['steps'] = 0
@@ -170,6 +167,8 @@ def show_information(player):
     print("Portal position: ({},{})".format(player["x"],player["y"]))
     #print("Pickaxe level: {} {}")
     print("------------------------------")
+    print("Load: {} / {}".format(getnumberofminerals(player),player['backpackslots']))
+    print("------------------------------")
     print("GP: {}".format(player['GP']))
     print("Steps taken: {}".format(player['steps']))
     print("------------------------------")
@@ -192,7 +191,7 @@ def save_game(game_map, fog, player):
 
                 writtenstring += '\n'
         mapsavefile.write(writtenstring)
-
+        print("Save Success!")
     
                            
             
@@ -244,6 +243,8 @@ def typeconverter(value:str):
             outputdict[keyvaluepair[0]] = int(keyvaluepair[1])
 
         return outputdict
+    else:
+        return value
 # This function loads the game
 def load_game(game_map, fog, player):
     # load map
@@ -266,6 +267,7 @@ def load_game(game_map, fog, player):
             else:
                 row[1] = typeconverter(row[1])
                 player[str(row[0])] = row[1]
+    
     return game_map, fog
 
 def show_main_menu():
@@ -312,6 +314,13 @@ def town_menu_actions(game_map,fog,player:dict):
     
     while True:
         sell_ores(player)
+        if player['GP'] >= 500:
+            print("-------------------------------------------------------------")
+            print("Woo-hoo! Well done, {}, you have {} GP!".format(player['name'],player["GP"]))
+            print("You now have enough to retire and play video games every day.")
+            print("And it only took you {} days and {} steps! You win!".format(player['day'],player['steps']))
+            print("-------------------------------------------------------------")
+            return 'Exit'
         show_town_menu(player["day"])
         townchoice = input("Your choice? ")
         print("")
@@ -337,7 +346,6 @@ def town_menu_actions(game_map,fog,player:dict):
         elif townchoice.lower() == "e":
             return "Enter"
         elif townchoice.lower() == "v": #TODO: save game
-            print('saving tha game')
             
             save_game(game_map,fog,player)
         elif townchoice.lower() == "q":
