@@ -1,11 +1,11 @@
-x - 0
-y - 0
-GP - 499
-day - 1
-steps - 0
+x - 15
+y - 2
+GP - 67
+day - 5
+steps - 44
 turns - 20
 name - gurt
 backpackslots - 10
-pickaxelevel - 1
+pickaxelevel - 2
 ores - []
 minerals - {'C': 0, 'S': 0, 'G': 0}

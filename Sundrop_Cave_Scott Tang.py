@@ -15,7 +15,7 @@ mineral_names = {'C': 'copper', 'S': 'silver', 'G': 'gold'}
 
 mineral_dropcount = {'C': [1,5], 'S': [1,3], 'G': [1,2]}
 
-pickaxe_price = [50, 150] # 50 is copper, 150 is gold
+pickaxe_price = [50, 150] # 50 is silver, 150 is gold
 
 prices = {}
 prices['copper'] = (1, 3)
@@ -89,6 +89,8 @@ def initialize_game(game_map:list, fog: list, player:dict):
     player['ores'] = []
     player['minerals'] = {"C" : 0, "S" : 0, "G" : 0}
 
+    
+
     clear_fog(fog, player)
     return game_map
 
@@ -154,6 +156,7 @@ def draw_view(game_map:list, fog:list, player:dict):
 def buy_stuff(player:dict):
     backpackslots = player['backpackslots']
     print("----------------------- Shop Menu -------------------------")
+    print("(P)ickaxe upgrade to Level {} to mine {} ore for {} GP".format(str(player['pickaxelevel']+1),minerals[player['pickaxelevel']],str(pickaxe_price[player['pickaxelevel']-1])))
     print("(B)ackpack upgrade to carry {} items for {} GP".format(backpackslots+2,backpackslots*2))
     print("(L)eave shop")
     print("-----------------------------------------------------------")
@@ -335,6 +338,12 @@ def town_menu_actions(game_map,fog,player:dict):
                         player["GP"] -= player["backpackslots"] *2
                         player["backpackslots"] += 2
                         continue
+                elif buy_choice.lower() == 'p':
+                    if player["GP"] >= pickaxe_price[player['pickaxelevel']-1]:
+                        print("Congratulations! You can now mine {}!".format(minerals[player['pickaxelevel']]))
+                        player["GP"] -= pickaxe_price[player['pickaxelevel']-1]
+                        player['pickaxelevel'] += 1
+                        continue
                 elif buy_choice.lower() == 'l':
                     break
             
@@ -393,12 +402,17 @@ def action_mining_menu(game_map,fog,player):
                 elif mineral_dropcount.get(futureposition):        
                     oresdropped = randint(mineral_dropcount.get(futureposition)[0],mineral_dropcount.get(futureposition)[1])        
                     numofminerals = getnumberofminerals(player)
+                    mineralname = mineral_names[futureposition]
                     if numofminerals == player['backpackslots']:
                         print("Your backpack is full. You can't mine that.")
                         continue
-                    if numofminerals + oresdropped > player['backpackslots']:                
+                    if player['pickaxelevel'] < minerals.index(mineralname)+1: #if pickaxe level is too low
+                        print("Your pickaxe level is too low. You can't mine that.")
+                        continue
+
+                    if numofminerals + oresdropped > player['backpackslots']:     #if randomly generated quantity of ore exceeds backpack size           
                         oresdropped = player['backpackslots'] - numofminerals
-                                
+                               
                     player['minerals'][futureposition] += oresdropped
                 
                     game_map[plr_y+dir_y][plr_x+dir_x] = " "
