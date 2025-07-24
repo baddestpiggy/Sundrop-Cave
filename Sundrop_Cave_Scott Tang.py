@@ -534,7 +534,8 @@ def save_high_scores(player): #assuming that high scores are sorted beforehand
         if len(highscores) < 5:
             highscores.insert(replacedindex,[player['name'],player['day'],player['steps'],player["TotalGP"]])
         else:
-            highscores[replacedindex] = [player['name'],player['day'],player['steps'],player["TotalGP"]]
+            highscores.insert(replacedindex,[player['name'],player['day'],player['steps'],player["TotalGP"]])
+            highscores.pop(5)
     if len(highscores) == 0:
         highscores.append([player['name'],player['day'],player['steps'],player["TotalGP"]])
     with open("high_scores.txt",'w') as highscorefile:
