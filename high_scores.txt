@@ -1,0 +1,5 @@
+gurt, 9, 66, 67
+burt, 10, 62, 67
+hurt, 11, 60, 67
+dragonbossku, 12, 67, 67
+shimshim, 13, 66, 67

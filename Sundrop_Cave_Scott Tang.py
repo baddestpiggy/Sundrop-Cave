@@ -3,7 +3,7 @@ from random import randint
 player = {}
 game_map = []
 fog = [] #copying the game map ig but instead using '?' for fog and ' ' for cleared fog
-
+highscores = []
 MAP_WIDTH = 0
 MAP_HEIGHT = 0
 
@@ -88,7 +88,7 @@ def initialize_game(game_map:list, fog: list, player:dict):
     player['pickaxelevel'] = 1
     player['ores'] = []
     player['minerals'] = {"C" : 0, "S" : 0, "G" : 0}
-
+    player['TotalGP'] = 0
     
 
     clear_fog(fog, player)
@@ -156,7 +156,9 @@ def draw_view(game_map:list, fog:list, player:dict):
 def buy_stuff(player:dict):
     backpackslots = player['backpackslots']
     print("----------------------- Shop Menu -------------------------")
-    print("(P)ickaxe upgrade to Level {} to mine {} ore for {} GP".format(str(player['pickaxelevel']+1),minerals[player['pickaxelevel']],str(pickaxe_price[player['pickaxelevel']-1])))
+    if not(player['pickaxelevel'] == len(minerals)-1):
+        print("(P)ickaxe upgrade to Level {} to mine {} ore for {} GP".format(str(player['pickaxelevel']+1),minerals[player['pickaxelevel']],str(pickaxe_price[player['pickaxelevel']-1])))
+    
     print("(B)ackpack upgrade to carry {} items for {} GP".format(backpackslots+2,backpackslots*2))
     print("(L)eave shop")
     print("-----------------------------------------------------------")
@@ -278,7 +280,7 @@ def show_main_menu():
     print("--- Main Menu ----")
     print("(N)ew game")
     print("(L)oad saved game")
-#    print("(H)igh scores")
+    print("(H)igh scores")
     print("(Q)uit")
     print("------------------")
 
@@ -312,7 +314,12 @@ def main_menu(game_map,fog,player):
     elif menuchoice.lower() == "q":
         
         return 'Exit','',''
-
+    elif menuchoice.lower() == 'h':
+        display_high_scores(highscores)
+        return 'Continue',[],[]
+    else:
+        print("Invalid input. Please enter a valid choice.")
+        return 'Continue',[],[]
 def town_menu_actions(game_map,fog,player:dict):
     
     while True:
@@ -323,6 +330,7 @@ def town_menu_actions(game_map,fog,player:dict):
             print("You now have enough to retire and play video games every day.")
             print("And it only took you {} days and {} steps! You win!".format(player['day'],player['steps']))
             print("-------------------------------------------------------------")
+            save_high_scores(player)
             return 'Exit'
         show_town_menu(player["day"])
         townchoice = input("Your choice? ")
@@ -338,15 +346,24 @@ def town_menu_actions(game_map,fog,player:dict):
                         player["GP"] -= player["backpackslots"] *2
                         player["backpackslots"] += 2
                         continue
-                elif buy_choice.lower() == 'p':
-                    if player["GP"] >= pickaxe_price[player['pickaxelevel']-1]:
-                        print("Congratulations! You can now mine {}!".format(minerals[player['pickaxelevel']]))
-                        player["GP"] -= pickaxe_price[player['pickaxelevel']-1]
-                        player['pickaxelevel'] += 1
+                    else:
+                        print("Sorry. You do not have enough GP to upgrade your backpack.")
                         continue
+                elif buy_choice.lower() == 'p':
+                    if not(player['pickaxelevel'] == len(minerals)-1):
+
+                        if player["GP"] >= pickaxe_price[player['pickaxelevel']-1]:
+                            print("Congratulations! You can now mine {}!".format(minerals[player['pickaxelevel']]))
+                            player["GP"] -= pickaxe_price[player['pickaxelevel']-1]
+                            player['pickaxelevel'] += 1
+                            continue
+                        else:
+                            print("Sorry. You do not have enough GP to upgrade your pickaxe.")
+                            continue
                 elif buy_choice.lower() == 'l':
                     break
-            
+                else:
+                    print("Invalid input. Please enter a valid choice.")
         elif townchoice.lower() == "i":
             show_information(player)
         elif townchoice.lower() == "m":
@@ -359,7 +376,9 @@ def town_menu_actions(game_map,fog,player:dict):
             save_game(game_map,fog,player)
         elif townchoice.lower() == "q":
             return "Exit"
-    
+        else:
+            print("Invalid input. Please enter a valid choice.")
+            continue
 def show_mining_menu(game_map,fog,player):
     turns = player['turns']
     backpackslots = player['backpackslots']
@@ -437,6 +456,9 @@ def action_mining_menu(game_map,fog,player):
                 print("-----------------------------------------------------")
                 print("You place your portal stone here and zap back to town.")
                 return "Town"
+            else:
+                print("Invalid input. Please enter a valid choice.")
+                continue
     
 def sell_ores(player):
     totalmineralssold = 0
@@ -454,11 +476,77 @@ def sell_ores(player):
         
         print("You sell {} {} ore for {} GP.".format(str(numofminerals),mineral_name,str(mineral_cost)))    
         player["GP"] += mineral_cost
+        player['TotalGP'] += mineral_cost
     if totalmineralssold != 0:
         player['minerals'] = {"C" : 0, "S" : 0, "G" : 0}
         print("You now have {} GP!".format(str(player["GP"])))
     
     return
+
+
+#format of highscores for each line will be 'name, days, steps, Total GP'
+def read_high_scores(highscorelist):
+    with open('high_scores.txt','r') as highscorefile:
+        highscorefile = highscorefile.read().split("\n") #splits individual high scores by newline
+        
+        if highscorefile == ['']:
+            
+            return []
+        for i in highscorefile:
+            
+            i = i.split(', ')
+            
+            if len(i) == 4:
+                
+                highscorelist.append(i)
+                
+        return highscorelist
+
+def display_high_scores(highscores):
+    
+    if len(highscores) == 0:
+        print("There are no high scores yet.")
+        return
+    print("{:<20}{:<10}{:<10}{:<10}".format('   Name', 'Days', 'Steps', 'Total GP'))
+    count = 1
+    for score in highscores:
+        print("{:<20}{:<10}{:<10}{:<10}".format(str(count)+'. '+score[0].replace("'",''), score[1], score[2], score[3]))
+        count += 1
+    return
+def save_high_scores(player): #assuming that high scores are sorted beforehand
+    replacedindex = -1
+    
+    for scoreindex in range(len(highscores)):
+        score = highscores[scoreindex]
+        if player['day'] < int(score[1]): #comparing days
+            replacedindex = scoreindex
+            break
+        elif player['day'] == int(score[1]):
+            if player['steps'] < int(score[2]):
+                replacedindex = scoreindex
+                break
+            elif player['steps'] == int(score[2]):
+                if player['TotalGP'] > int(score[3]):
+                    replacedindex = scoreindex
+                    break
+    if replacedindex >= 0:
+
+        if len(highscores) < 5:
+            highscores.insert(replacedindex,[player['name'],player['day'],player['steps'],player["TotalGP"]])
+        else:
+            highscores[replacedindex] = [player['name'],player['day'],player['steps'],player["TotalGP"]]
+    if len(highscores) == 0:
+        highscores.append([player['name'],player['day'],player['steps'],player["TotalGP"]])
+    with open("high_scores.txt",'w') as highscorefile:
+        writetext = ''
+        for score in highscores:
+            score = str(score)
+            score = score.replace('[','')
+            score = score.replace(']','')
+            score = score.replace("'",'')
+            score = score.replace('"','')
+            writetext += score+'\n'
+        highscorefile.write(writetext)
 #--------------------------- MAIN GAME ---------------------------
 game_state = 'main'
 print("---------------- Welcome to Sundrop Caves! ----------------")
@@ -473,22 +561,25 @@ print("-----------------------------------------------------------")
 
 
 
-
+highscores = read_high_scores(highscores)
 
 while True:
     main_choice,game_map,fog = main_menu(game_map,fog,player)
     
     if main_choice == "Exit":
         break
+    elif main_choice == "Continue":
+        continue
     else:
         while True:
             player['day'] += 1
             town_action = town_menu_actions(game_map,fog,player)
             if town_action == "Exit":
                 break
+            
             elif town_action == "Enter":
                 print("---------------------------------------------------")
-                print("{:^51}".format("DAY",str(player['day'])))
+                print("{:^51}".format("DAY "+str(player['day'])))
                 print("---------------------------------------------------")
                 mining_action = action_mining_menu(game_map,fog,player)
                 if mining_action == "Town":

@@ -1,6 +1,6 @@
 T                      GGG    
-     CC           S      GGG  
-    CCCC      S  S      GGG   
+     CC                  GGG  
+    CCCC      S         GGG   
              SSSSS  CCC       
       CC       S     CCCC     
 CCCCCCCCC           CCCCC     
